@@ -26,6 +26,8 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.undef.manoslocales.R
 import com.undef.manoslocales.ui.database.UserViewModel
 
@@ -244,7 +246,18 @@ fun RegisterScreen(
                         if (role == "provider" && locationPermission.status.isGranted) {
                             val fused = LocationServices.getFusedLocationProviderClient(context)
                             fused.lastLocation.addOnSuccessListener { loc ->
-                                registerAction(loc?.latitude, loc?.longitude)
+                                if (loc != null) {
+                                    registerAction(loc.latitude, loc.longitude)
+                                } else {
+                                    val token = CancellationTokenSource()
+                                    fused.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, token.token)
+                                        .addOnSuccessListener { cLoc ->
+                                            registerAction(cLoc?.latitude, cLoc?.longitude)
+                                        }
+                                        .addOnFailureListener {
+                                            registerAction(null, null)
+                                        }
+                                }
                             }.addOnFailureListener {
                                 registerAction(null, null)
                             }

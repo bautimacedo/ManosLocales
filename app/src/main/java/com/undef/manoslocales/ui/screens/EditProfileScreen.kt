@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -208,22 +210,33 @@ fun EditProfileScreen(
                     if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
                         val fused = LocationServices.getFusedLocationProviderClient(context)
                         fused.lastLocation.addOnSuccessListener { location: Location? ->
-                            val lat = location?.latitude
-                            val lng = location?.longitude
-                            user?.let {
-                                val updated = it.copy(
-                                    nombre = nombre.text,
-                                    apellido = apellido.text,
-                                    phone = telefono.text,
-                                    city = ciudad.text.trim().lowercase(),
-                                    categoria = categoria,
-                                    profileImageUrl = profileImageUrl,
-                                    lat = lat,
-                                    lng = lng
-                                )
-                                userViewModel.updateUserProfile(updated) {
-                                    navController.popBackStack()
+                            val proceed: (Double?, Double?) -> Unit = { la, lo ->
+                                user?.let {
+                                    val updated = it.copy(
+                                        nombre = nombre.text,
+                                        apellido = apellido.text,
+                                        phone = telefono.text,
+                                        city = ciudad.text.trim().lowercase(),
+                                        categoria = categoria,
+                                        profileImageUrl = profileImageUrl,
+                                        lat = la ?: it.lat,
+                                        lng = lo ?: it.lng
+                                    )
+                                    userViewModel.updateUserProfile(updated) {
+                                        navController.popBackStack()
+                                    }
                                 }
+                            }
+
+                            if (location != null) {
+                                proceed(location.latitude, location.longitude)
+                            } else {
+                                val token = CancellationTokenSource()
+                                fused.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, token.token)
+                                    .addOnSuccessListener { loc ->
+                                        proceed(loc?.latitude, loc?.longitude)
+                                    }
+                                    .addOnFailureListener { proceed(null, null) }
                             }
                         }
                     } else {
