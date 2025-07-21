@@ -167,8 +167,11 @@ class UserViewModel(
 
                 categoria?.let { userMap["categoria"] = it }
                 ciudad?.let { userMap["city"] = it.trim().lowercase() }
-                lat?.let { userMap["lat"] = it }
-                lng?.let { userMap["lng"] = it }
+
+                if (role == "provider") {
+                    userMap["lat"] = lat ?: 0.0
+                    userMap["lng"] = lng ?: 0.0
+                }
 
                 firestore.collection("users").document(uid).set(userMap)
                     .addOnSuccessListener { onComplete(true) }
@@ -216,8 +219,11 @@ class UserViewModel(
         updated.categoria?.let { map["categoria"] = it }
         updated.city?.let { map["city"] = it.trim().lowercase() }
         if (updated.profileImageUrl.isNotBlank()) map["profileImageUrl"] = updated.profileImageUrl
-        updated.lat?.let { map["lat"] = it }
-        updated.lng?.let { map["lng"] = it }
+
+        if (updated.role == "provider") {
+            map["lat"] = updated.lat ?: 0.0
+            map["lng"] = updated.lng ?: 0.0
+        }
 
         firestore.collection("users").document(uid)
             .update(map)

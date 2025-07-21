@@ -15,8 +15,8 @@ data class User(
     val categoria: String? = null,
     val city: String? = null,
     val role: String = "",
-    val lat: Double? = null,
-    val lng: Double? = null,
+    val lat: Double = 0.0,
+    val lng: Double = 0.0,
 
     @get:Exclude val password: String = ""
 )
