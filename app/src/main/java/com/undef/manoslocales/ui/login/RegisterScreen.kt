@@ -219,24 +219,39 @@ fun RegisterScreen(
             Button(
                 onClick = {
                     if (email.contains("@") && password.length >= 8) {
-                        viewModel.registerUser(
-                            email = email,
-                            password = password,
-                            nombre = nombre,
-                            apellido = apellido,
-                            role = role,
-                            phone = numerotel,
-                            categoria = if (role == "provider") categoria else null,
-                            ciudad = ciudad,
-                            lat = if (role == "provider") lat else null,
-                            lng = if (role == "provider") lng else null
-                        ) { success ->
-                            if (success) {
-                                Toast.makeText(context, "Registrado como $role", Toast.LENGTH_SHORT).show()
-                                onRegisterSuccess()
-                            } else {
-                                Toast.makeText(context, "Error al registrar", Toast.LENGTH_SHORT).show()
+                        val registerAction: (Double?, Double?) -> Unit = { la, lo ->
+                            viewModel.registerUser(
+                                email = email,
+                                password = password,
+                                nombre = nombre,
+                                apellido = apellido,
+                                role = role,
+                                phone = numerotel,
+                                categoria = if (role == "provider") categoria else null,
+                                ciudad = ciudad,
+                                lat = if (role == "provider") la else null,
+                                lng = if (role == "provider") lo else null
+                            ) { success ->
+                                if (success) {
+                                    Toast.makeText(context, "Registrado como $role", Toast.LENGTH_SHORT).show()
+                                    onRegisterSuccess()
+                                } else {
+                                    Toast.makeText(context, "Error al registrar", Toast.LENGTH_SHORT).show()
+                                }
                             }
+                        }
+
+                        if (role == "provider" && locationPermission.status.isGranted) {
+                            val fused = LocationServices.getFusedLocationProviderClient(context)
+                            fused.lastLocation.addOnSuccessListener { loc ->
+                                registerAction(loc?.latitude, loc?.longitude)
+                            }.addOnFailureListener {
+                                registerAction(null, null)
+                            }
+                        } else if (role == "provider" && !locationPermission.status.isGranted) {
+                            locationPermission.launchPermissionRequest()
+                        } else {
+                            registerAction(null, null)
                         }
                     } else {
                         Toast.makeText(context, "Verificá tu email o contraseña", Toast.LENGTH_SHORT).show()
